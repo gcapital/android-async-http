@@ -173,6 +173,10 @@ public class AsyncHttpClient {
         clientHeaderMap = new HashMap<String, String>();
     }
 
+    public void setRetryCount(int count) {
+        httpClient.setHttpRequestRetryHandler(new RetryHandler(count));
+    }
+
     /**
      * Get the underlying HttpClient instance. This is useful for setting
      * additional fine-grained settings for requests by accessing the

@@ -24,7 +24,6 @@
 package com.loopj.android.http;
 
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.HashSet;
@@ -35,13 +34,14 @@ import javax.net.ssl.SSLException;
 import org.apache.http.NoHttpResponseException;
 import org.apache.http.client.HttpRequestRetryHandler;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.conn.ConnectTimeoutException;
 import org.apache.http.protocol.ExecutionContext;
 import org.apache.http.protocol.HttpContext;
 
 import android.os.SystemClock;
 
 class RetryHandler implements HttpRequestRetryHandler {
-    private static final int RETRY_SLEEP_TIME_MILLIS = 1500;
+    private static final int RETRY_SLEEP_TIME_MILLIS = 1000;
     private static HashSet<Class<?>> exceptionWhitelist = new HashSet<Class<?>>();
     private static HashSet<Class<?>> exceptionBlacklist = new HashSet<Class<?>>();
 
@@ -52,9 +52,9 @@ class RetryHandler implements HttpRequestRetryHandler {
         exceptionWhitelist.add(UnknownHostException.class);
         // retry-this, since it may happens as part of a Wi-Fi to 3G failover
         exceptionWhitelist.add(SocketException.class);
+        // retry-this, since it may happens as part of a Wi-Fi to 3G failover
+        exceptionWhitelist.add(ConnectTimeoutException.class);
 
-        // never retry timeouts
-        exceptionBlacklist.add(InterruptedIOException.class);
         // never retry SSL handshake failures
         exceptionBlacklist.add(SSLException.class);
     }
@@ -88,13 +88,19 @@ class RetryHandler implements HttpRequestRetryHandler {
 
         if(retry) {
             // resend all idempotent requests
-            HttpUriRequest currentReq = (HttpUriRequest) context.getAttribute( ExecutionContext.HTTP_REQUEST );
-            String requestType = currentReq.getMethod();
-            retry = !requestType.equals("POST");
+        	try {
+	            HttpUriRequest currentReq = (HttpUriRequest) context.getAttribute( ExecutionContext.HTTP_REQUEST );
+	            String requestType = currentReq.getMethod();
+	            retry = !requestType.equals("POST");
+        	}
+        	catch (Exception e) {
+        		
+        	}
         }
 
         if(retry) {
-            SystemClock.sleep(RETRY_SLEEP_TIME_MILLIS);
+        	int delay = RETRY_SLEEP_TIME_MILLIS * (int)Math.pow(2, (executionCount-1));
+            SystemClock.sleep(delay);
         } else {
             exception.printStackTrace();
         }
