@@ -55,8 +55,8 @@ class RetryHandler implements HttpRequestRetryHandler {
         // retry-this, since it may happens as part of a Wi-Fi to 3G failover
         exceptionWhitelist.add(ConnectTimeoutException.class);
 
-        // never retry SSL handshake failures
-        exceptionBlacklist.add(SSLException.class);
+        // retry SSL handshake failures
+        exceptionWhitelist.add(SSLException.class);
     }
 
     private final int maxRetries;
@@ -91,7 +91,7 @@ class RetryHandler implements HttpRequestRetryHandler {
         	try {
 	            HttpUriRequest currentReq = (HttpUriRequest) context.getAttribute( ExecutionContext.HTTP_REQUEST );
 	            String requestType = currentReq.getMethod();
-	            retry = !requestType.equals("POST");
+//	            retry = !requestType.equals("POST");
         	}
         	catch (Exception e) {
         		
